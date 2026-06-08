@@ -146,6 +146,7 @@ func resourceConnector() *schema.Resource {
 					Type:     schema.TypeMap,
 					Elem:     &schema.Schema{Type: schema.TypeString},
 					Required: true,
+					ForceNew: true,
 				},
 				names.AttrDescription: {
 					Type:         schema.TypeString,
@@ -544,23 +545,6 @@ func resourceConnectorUpdate(ctx context.Context, d *schema.ResourceData, meta a
 			currentVersion = aws.ToString(output.CurrentVersion)
 		}
 
-		if d.HasChange("connector_configuration") {
-			input := &kafkaconnect.UpdateConnectorInput{
-				ConnectorConfiguration: flex.ExpandStringValueMap(d.Get("connector_configuration").(map[string]any)),
-				ConnectorArn:           aws.String(d.Id()),
-				CurrentVersion:         aws.String(currentVersion),
-			}
-
-			_, err := conn.UpdateConnector(ctx, input)
-
-			if err != nil {
-				return sdkdiag.AppendErrorf(diags, "updating MSK Connect Connector configuration (%s): %s", d.Id(), err)
-			}
-
-			if _, err := waitConnectorUpdated(ctx, conn, d.Id(), d.Timeout(schema.TimeoutUpdate)); err != nil {
-				return sdkdiag.AppendErrorf(diags, "waiting for MSK Connect Connector (%s) update: %s", d.Id(), err)
-			}
-		}
 	}
 
 	return append(diags, resourceConnectorRead(ctx, d, meta)...)
